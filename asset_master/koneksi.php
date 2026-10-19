@@ -30,4 +30,9 @@ $uploadDir = __DIR__ . '/uploads';
 if (!is_dir($uploadDir)) {
     mkdir($uploadDir, 0777, true);
 }
+
+// Nonaktifkan cache browser untuk data dinamis
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
+header("Expires: 0");
 ?>

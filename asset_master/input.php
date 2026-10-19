@@ -213,9 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <select class="form-select" id="no_lambung" name="no_lambung" required>
                                             <option value="">-- Pilih No Lambung (8143 - 8164) --</option>
                                             <?php for ($i = 8143; $i <= 8164; $i++): ?>
-                                                <option value="<?= $i; ?>" <?= (isset($_POST['no_lambung']) && $_POST['no_lambung'] == $i) ? 'selected' : ''; ?>>
-                                                    <?= $i; ?>
-                                                </option>
+                                                <option value="<?= $i; ?>" <?= (isset($_POST['no_lambung']) && $_POST['no_lambung'] == $i) ? 'selected' : ''; ?>><?= $i; ?></option>
                                             <?php endfor; ?>
                                         </select>
                                         <div class="form-text">Pilih nomor lambung dari 8143 sampai 8164.</div>
