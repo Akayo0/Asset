@@ -11,14 +11,40 @@ if (!isset($_SESSION['user_id'])) {
 $currentPage = 'master_data';
 $error = '';
 
+// Ambil semua daftar no_lambung dari database (master_no_lambung & assets)
+try {
+    $stmtLambung = $pdo->query("
+        SELECT no_lambung FROM master_no_lambung
+        UNION
+        SELECT no_lambung FROM assets WHERE no_lambung IS NOT NULL
+        ORDER BY no_lambung ASC
+    ");
+    $listLambung = $stmtLambung->fetchAll(PDO::FETCH_COLUMN);
+} catch (PDOException $e) {
+    $listLambung = [];
+}
+
+// Fallback jika belum ada data sama sekali
+if (empty($listLambung)) {
+    $listLambung = range(8143, 8164);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $sdt        = trim($_POST['sdt'] ?? '');
-    $no_lambung = trim($_POST['no_lambung'] ?? '');
-    $merk       = trim($_POST['merk'] ?? 'Mercedez Benz');
-    $tipe       = trim($_POST['tipe'] ?? '');
+    $sdt               = trim($_POST['sdt'] ?? '');
+    $no_lambung_select = trim($_POST['no_lambung'] ?? '');
+    $no_lambung_manual = trim($_POST['no_lambung_manual'] ?? '');
+    $merk              = trim($_POST['merk'] ?? 'Mercedez Benz');
+    $tipe              = trim($_POST['tipe'] ?? '');
+
+    // Gunakan input manual jika diisi atau jika dropdown bernilai __manual__
+    if (!empty($no_lambung_manual)) {
+        $no_lambung = $no_lambung_manual;
+    } else {
+        $no_lambung = $no_lambung_select;
+    }
 
     // Validasi input wajib
-    if (empty($sdt) || empty($no_lambung) || empty($tipe)) {
+    if (empty($sdt) || empty($no_lambung) || $no_lambung === '__manual__' || empty($tipe)) {
         $error = 'Field SDT, No Lambung, dan Tipe wajib diisi!';
     } elseif (!is_numeric($no_lambung)) {
         $error = 'No Lambung harus berupa angka!';
@@ -49,6 +75,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Jika tidak ada error, simpan data menggunakan PDO Prepared Statement
         if (empty($error)) {
             try {
+                // 1. Simpan nomor lambung ke master_no_lambung agar otomatis masuk ke dropdown selanjutnya
+                try {
+                    $stmtMaster = $pdo->prepare("INSERT IGNORE INTO master_no_lambung (no_lambung) VALUES (:no_lambung)");
+                    $stmtMaster->execute([':no_lambung' => (int)$no_lambung]);
+                } catch (PDOException $e) {
+                    // Abaikan jika tabel master belum ada / terjadi bentrok unik
+                }
+
+                // 2. Simpan ke tabel assets
                 $stmt = $pdo->prepare("INSERT INTO assets (sdt, no_lambung, merk, tipe, foto) VALUES (:sdt, :no_lambung, :merk, :tipe, :foto)");
                 $stmt->execute([
                     ':sdt'        => $sdt,
@@ -207,16 +242,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <input type="text" class="form-control" id="sdt" name="sdt" placeholder="Contoh: SDT-01-JKT" required value="<?= htmlspecialchars($_POST['sdt'] ?? ''); ?>">
                                     </div>
 
-                                    <!-- Input No Lambung Dropdown (8143 s/d 8164) -->
+                                    <!-- Input No Lambung Dropdown & Tambah Manual -->
                                     <div class="mb-3">
-                                        <label for="no_lambung" class="form-label fw-semibold">No Lambung <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="no_lambung" name="no_lambung" required>
-                                            <option value="">-- Pilih No Lambung (8143 - 8164) --</option>
-                                            <?php for ($i = 8143; $i <= 8164; $i++): ?>
-                                                <option value="<?= $i; ?>" <?= (isset($_POST['no_lambung']) && $_POST['no_lambung'] == $i) ? 'selected' : ''; ?>><?= $i; ?></option>
-                                            <?php endfor; ?>
-                                        </select>
-                                        <div class="form-text">Pilih nomor lambung dari 8143 sampai 8164.</div>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="form-label fw-semibold mb-0">No Lambung <span class="text-danger">*</span></label>
+                                            <button type="button" id="btnToggleManual" class="btn btn-sm btn-link p-0 text-decoration-none">
+                                                <i class="bi bi-pencil-square me-1"></i><span id="toggleText">Ketik Nomor Manual</span>
+                                            </button>
+                                        </div>
+
+                                        <!-- Pilihan Dropdown -->
+                                        <div id="wrapperSelect">
+                                            <select class="form-select" id="no_lambung_select" name="no_lambung" required>
+                                                <option value="">-- Pilih No Lambung --</option>
+                                                <?php foreach ($listLambung as $num): ?>
+                                                    <option value="<?= $num; ?>" <?= (isset($no_lambung) && $no_lambung == $num) ? 'selected' : ''; ?>><?= $num; ?></option>
+                                                <?php endforeach; ?>
+                                                <option value="__manual__">+ Tambah Nomor Lambung Baru (Manual)...</option>
+                                            </select>
+                                            <div class="form-text">Pilih dari nomor yang tersedia (8143 - 8164 & data tersimpan) atau ketik manual.</div>
+                                        </div>
+
+                                        <!-- Input Manual -->
+                                        <div id="wrapperManual" class="d-none">
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-light text-muted"><i class="bi bi-123"></i></span>
+                                                <input type="number" class="form-control" id="no_lambung_manual" name="no_lambung_manual" placeholder="Ketik nomor lambung baru (misal: 8165, 8200)...">
+                                                <button type="button" id="btnBackToSelect" class="btn btn-outline-secondary">
+                                                    <i class="bi bi-arrow-return-left me-1"></i>Pilih dari Dropdown
+                                                </button>
+                                            </div>
+                                            <div class="form-text text-primary">
+                                                <i class="bi bi-info-circle me-1"></i>Nomor baru yang diketik akan otomatis ditambahkan ke dropdown untuk input berikutnya.
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <!-- Input Merk (Pre-filled dengan Mercedez Benz) -->
@@ -275,6 +334,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 sidebarMenu.classList.remove('show');
                 backdrop.classList.remove('show');
             });
+        }
+
+        // Logika Dropdown vs Input Manual No Lambung
+        const wrapperSelect     = document.getElementById('wrapperSelect');
+        const wrapperManual     = document.getElementById('wrapperManual');
+        const selectLambung     = document.getElementById('no_lambung_select');
+        const inputManual       = document.getElementById('no_lambung_manual');
+        const btnToggleManual   = document.getElementById('btnToggleManual');
+        const btnBackToSelect   = document.getElementById('btnBackToSelect');
+        const toggleText        = document.getElementById('toggleText');
+
+        function showManual() {
+            wrapperSelect.classList.add('d-none');
+            wrapperManual.classList.remove('d-none');
+            selectLambung.removeAttribute('required');
+            inputManual.setAttribute('required', 'required');
+            inputManual.focus();
+            if (toggleText) toggleText.innerText = 'Pilih dari Dropdown';
+        }
+
+        function showSelect() {
+            wrapperManual.classList.add('d-none');
+            wrapperSelect.classList.remove('d-none');
+            inputManual.removeAttribute('required');
+            inputManual.value = '';
+            selectLambung.setAttribute('required', 'required');
+            if (selectLambung.value === '__manual__') {
+                selectLambung.value = '';
+            }
+            if (toggleText) toggleText.innerText = 'Ketik Nomor Manual';
+        }
+
+        if (selectLambung) {
+            selectLambung.addEventListener('change', function() {
+                if (this.value === '__manual__') {
+                    showManual();
+                }
+            });
+        }
+
+        if (btnToggleManual) {
+            btnToggleManual.addEventListener('click', function() {
+                if (wrapperManual.classList.contains('d-none')) {
+                    showManual();
+                } else {
+                    showSelect();
+                }
+            });
+        }
+
+        if (btnBackToSelect) {
+            btnBackToSelect.addEventListener('click', showSelect);
         }
     </script>
 </body>
