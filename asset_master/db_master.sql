@@ -50,3 +50,32 @@ CREATE TABLE IF NOT EXISTS `assets` (
     `foto` VARCHAR(255) NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+-- Struktur Tabel `radio_sdt` (Monitoring Radio & SWR Unit)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `radio_sdt` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `no_urut` INT NULL,
+    `no_lambung` VARCHAR(50) NOT NULL,
+    `status_unit_sdt` VARCHAR(50) NOT NULL DEFAULT 'RFU',
+    `status_pemasangan_radio` VARCHAR(50) NOT NULL DEFAULT 'TERPASANG',
+    `status_radio` VARCHAR(50) NOT NULL DEFAULT 'AKTIF',
+    `tipe_radio` VARCHAR(100) NOT NULL DEFAULT 'XiR3688',
+    `id_radio` VARCHAR(50) NOT NULL,
+    `serial_number_radio` VARCHAR(100) NOT NULL,
+    `swr_road1_tcm` VARCHAR(50) NULL DEFAULT '',
+    `swr_road2_tcm` VARCHAR(50) NULL DEFAULT '',
+    `swr_haulrod_bek` VARCHAR(50) NULL DEFAULT '',
+    `swr_office_lma` VARCHAR(50) NULL DEFAULT '',
+    `swr_ert_bunyut` VARCHAR(50) NULL DEFAULT '',
+    `swr_ert_bek` VARCHAR(50) NULL DEFAULT '',
+    `swr_bengkirai` VARCHAR(50) NULL DEFAULT '',
+    `antena_jenis` VARCHAR(50) NULL DEFAULT '',
+    `antena_ukuran` VARCHAR(50) NULL DEFAULT '',
+    `keterangan` TEXT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uq_radio_lambung` (`no_lambung`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+

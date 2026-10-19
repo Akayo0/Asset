@@ -41,6 +41,17 @@ $currentPage = $currentPage ?? 'beranda';
                 <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size: 0.68rem;">+ Tambah</span>
             </a>
         </li>
+
+        <!-- 3. Data Radio & SWR (Fitur Baru) -->
+        <li class="nav-item">
+            <a href="radio_sdt.php" class="nav-link text-white <?= ($currentPage === 'radio_sdt') ? 'active bg-primary' : ''; ?> d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-broadcast-pin me-2 fs-5"></i>
+                    <span class="fw-medium">Data Radio & SWR</span>
+                </div>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size: 0.68rem;">SDT</span>
+            </a>
+        </li>
     </ul>
 
     <hr class="border-secondary my-3 opacity-25">

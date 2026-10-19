@@ -3,8 +3,8 @@
 
 $host    = 'localhost';
 $db      = 'db_master';
-$user    = 'root';
-$pass    = '';
+$user    = 'elma_user';
+$pass    = 'ElmaPass2026!';
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
@@ -17,7 +17,12 @@ $options = [
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);
 } catch (PDOException $e) {
-    die("Koneksi ke database gagal: " . $e->getMessage());
+    try {
+        // Fallback untuk local dev / XAMPP (root tanpa password)
+        $pdo = new PDO("mysql:host=$host;dbname=$db;charset=$charset", 'root', '', $options);
+    } catch (PDOException $e2) {
+        die("Koneksi ke database gagal: " . $e->getMessage());
+    }
 }
 
 // Inisialisasi session jika belum aktif
