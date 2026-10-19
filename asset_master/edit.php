@@ -8,6 +8,8 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+$currentPage = 'beranda';
+
 // Validasi parameter ID
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 if (!$id) {
@@ -54,14 +56,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $allowedExts   = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 
             if (in_array($fileExtension, $allowedExts)) {
-                $cleanName          = preg_replace('/[^a-zA-Z0-9_-]/', '', pathinfo($fileName, PATHINFO_FILENAME));
-                $new_foto_name      = time() . '_' . $cleanName . '.' . $fileExtension;
-                $destPath           = __DIR__ . '/uploads/' . $new_foto_name;
+                $cleanName     = preg_replace('/[^a-zA-Z0-9_-]/', '', pathinfo($fileName, PATHINFO_FILENAME));
+                $new_foto_name = time() . '_' . $cleanName . '.' . $fileExtension;
+                $destPath      = __DIR__ . '/uploads/' . $new_foto_name;
 
                 if (move_uploaded_file($fileTmpPath, $destPath)) {
                     $uploaded_new_photo = true;
 
-                    // Hapus foto fisik lama jika ada
+                    // Hapus foto fisik lama jika ada di uploads/
                     if (!empty($asset['foto'])) {
                         $oldFilePath = __DIR__ . '/uploads/' . $asset['foto'];
                         if (file_exists($oldFilePath)) {
@@ -119,120 +121,220 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Asset - Pendataan Asset Master</title>
-    <!-- Bootstrap 5 CSS -->
+    <!-- Bootstrap 5 CSS CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
+        body {
+            overflow-x: hidden;
+            background-color: #f8fafc;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        }
+        #layout-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background-color: #0f172a;
+            transition: all 0.3s ease;
+            z-index: 1040;
+        }
+        .sidebar .nav-link {
+            color: #94a3b8;
+            border-radius: 0.5rem;
+            padding: 0.7rem 0.9rem;
+            transition: all 0.2s;
+        }
+        .sidebar .nav-link:hover {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+        .sidebar .nav-link.active {
+            color: #ffffff;
+            background-color: #0d6efd;
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.35);
+        }
+        #content-wrapper {
+            flex-grow: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
         .preview-img {
             max-width: 150px;
             max-height: 150px;
             object-fit: cover;
             border-radius: 8px;
         }
+        @media (max-width: 991.98px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: -260px;
+            }
+            .sidebar.show {
+                left: 0;
+            }
+            .sidebar-backdrop {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1030;
+            }
+            .sidebar-backdrop.show {
+                display: block;
+            }
+        }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="index.php">
-                <i class="bi bi-truck-front-fill me-2"></i> Pendataan Asset Master
-            </a>
-            <div class="d-flex align-items-center ms-auto">
-                <a href="index.php" class="btn btn-outline-light btn-sm">
-                    <i class="bi bi-arrow-left me-1"></i> Kembali ke Dashboard
-                </a>
-            </div>
-        </div>
-    </nav>
+    <div id="layout-wrapper">
+        <!-- Backdrop Mobile -->
+        <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
 
-    <div class="container pb-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-white py-3">
-                        <h5 class="card-title mb-0 fw-bold text-warning-emphasis">
-                            <i class="bi bi-pencil-square me-2"></i>Edit Data Asset #<?= htmlspecialchars($asset['id']); ?>
-                        </h5>
+        <!-- Sidebar Kiri -->
+        <?php include 'sidebar.php'; ?>
+
+        <!-- Konten Halaman Kanan -->
+        <div id="content-wrapper">
+            
+            <!-- Topbar Header -->
+            <header class="navbar navbar-expand bg-white border-bottom shadow-sm px-4 py-3 sticky-top">
+                <div class="d-flex align-items-center w-100 justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <button id="sidebarToggle" class="btn btn-outline-secondary d-lg-none me-3" type="button" aria-label="Toggle Sidebar">
+                            <i class="bi bi-list fs-5"></i>
+                        </button>
+                        <div>
+                            <h5 class="mb-0 fw-bold text-dark">
+                                <i class="bi bi-pencil-square text-warning me-2"></i>Edit Data Asset #<?= htmlspecialchars($asset['id']); ?>
+                            </h5>
+                            <small class="text-muted">Perbarui informasi spesifikasi atau foto asset</small>
+                        </div>
                     </div>
-                    <div class="card-body p-4">
-
-                        <?php if (!empty($error)): ?>
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <i class="bi bi-exclamation-triangle-fill me-2"></i> <?= htmlspecialchars($error); ?>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        <?php endif; ?>
-
-                        <form action="edit.php?id=<?= $asset['id']; ?>" method="POST" enctype="multipart/form-data">
-                            
-                            <!-- Input SDT -->
-                            <div class="mb-3">
-                                <label for="sdt" class="form-label fw-semibold">SDT <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="sdt" name="sdt" required value="<?= htmlspecialchars($_POST['sdt'] ?? $asset['sdt']); ?>">
-                            </div>
-
-                            <!-- Input No Lambung dengan Datalist -->
-                            <div class="mb-3">
-                                <label for="no_lambung" class="form-label fw-semibold">No Lambung <span class="text-danger">*</span></label>
-                                <input list="listLambung" type="number" class="form-control" id="no_lambung" name="no_lambung" required value="<?= htmlspecialchars($_POST['no_lambung'] ?? $asset['no_lambung']); ?>">
-                                <datalist id="listLambung">
-                                    <?php for ($i = 843; $i <= 8164; $i++): ?>
-                                        <option value="<?= $i; ?>">
-                                    <?php endfor; ?>
-                                </datalist>
-                                <div class="form-text">Bisa pilih nomor rekomendasi (843 s/d 8164) atau ketik manual.</div>
-                            </div>
-
-                            <!-- Input Merk -->
-                            <div class="mb-3">
-                                <label for="merk" class="form-label fw-semibold">Merk</label>
-                                <input type="text" class="form-control" id="merk" name="merk" required value="<?= htmlspecialchars($_POST['merk'] ?? $asset['merk']); ?>">
-                            </div>
-
-                            <!-- Input Tipe -->
-                            <div class="mb-3">
-                                <label for="tipe" class="form-label fw-semibold">Tipe <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="tipe" name="tipe" required value="<?= htmlspecialchars($_POST['tipe'] ?? $asset['tipe']); ?>">
-                            </div>
-
-                            <!-- Foto Lama & Input Foto Baru -->
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold d-block">Foto Asset Saat Ini</label>
-                                <div class="mb-2">
-                                    <?php if (!empty($asset['foto']) && file_exists(__DIR__ . '/uploads/' . $asset['foto'])): ?>
-                                        <img src="uploads/<?= htmlspecialchars($asset['foto']); ?>" alt="Foto Asset" class="preview-img border shadow-sm">
-                                        <div class="small text-muted mt-1"><?= htmlspecialchars($asset['foto']); ?></div>
-                                    <?php else: ?>
-                                        <span class="badge bg-secondary p-2">Belum ada foto</span>
-                                    <?php endif; ?>
-                                </div>
-                                <label for="foto" class="form-label fw-semibold mt-2">Ganti Foto (Opsional)</label>
-                                <input class="form-control" type="file" id="foto" name="foto" accept="image/*">
-                                <div class="form-text">Biarkan kosong jika tidak ingin mengubah foto asset.</div>
-                            </div>
-
-                            <div class="d-flex justify-content-between pt-3 border-top">
-                                <a href="index.php" class="btn btn-secondary">
-                                    <i class="bi bi-x-circle me-1"></i> Batal
-                                </a>
-                                <button type="submit" class="btn btn-warning px-4 text-dark fw-semibold">
-                                    <i class="bi bi-check-lg me-1"></i> Simpan Perubahan
-                                </button>
-                            </div>
-
-                        </form>
+                    <div>
+                        <a href="index.php" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i> Kembali ke Beranda
+                        </a>
                     </div>
                 </div>
+            </header>
 
-            </div>
+            <!-- Isi Konten Utama -->
+            <main class="p-4">
+                <div class="row justify-content-center">
+                    <div class="col-xl-9 col-lg-10">
+                        
+                        <div class="card shadow-sm border-0 rounded-3">
+                            <div class="card-header bg-white py-3 border-bottom">
+                                <h6 class="mb-0 fw-bold text-dark">
+                                    <i class="bi bi-sliders text-warning me-2"></i>Formulir Perubahan Data
+                                </h6>
+                            </div>
+                            <div class="card-body p-4">
+
+                                <?php if (!empty($error)): ?>
+                                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                        <i class="bi bi-exclamation-triangle-fill me-2"></i> <?= htmlspecialchars($error); ?>
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                <?php endif; ?>
+
+                                <form action="edit.php?id=<?= $asset['id']; ?>" method="POST" enctype="multipart/form-data">
+                                    
+                                    <!-- Input SDT -->
+                                    <div class="mb-3">
+                                        <label for="sdt" class="form-label fw-semibold">SDT <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="sdt" name="sdt" required value="<?= htmlspecialchars($_POST['sdt'] ?? $asset['sdt']); ?>">
+                                    </div>
+
+                                    <!-- Input No Lambung dengan Datalist -->
+                                    <div class="mb-3">
+                                        <label for="no_lambung" class="form-label fw-semibold">No Lambung <span class="text-danger">*</span></label>
+                                        <input list="listLambung" type="number" class="form-control" id="no_lambung" name="no_lambung" required value="<?= htmlspecialchars($_POST['no_lambung'] ?? $asset['no_lambung']); ?>">
+                                        <datalist id="listLambung">
+                                            <?php for ($i = 843; $i <= 8164; $i++): ?>
+                                                <option value="<?= $i; ?>">
+                                            <?php endfor; ?>
+                                        </datalist>
+                                        <div class="form-text">Bisa pilih nomor rekomendasi (843 s/d 8164) atau ketik manual.</div>
+                                    </div>
+
+                                    <!-- Input Merk -->
+                                    <div class="mb-3">
+                                        <label for="merk" class="form-label fw-semibold">Merk</label>
+                                        <input type="text" class="form-control" id="merk" name="merk" required value="<?= htmlspecialchars($_POST['merk'] ?? $asset['merk']); ?>">
+                                    </div>
+
+                                    <!-- Input Tipe -->
+                                    <div class="mb-3">
+                                        <label for="tipe" class="form-label fw-semibold">Tipe <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="tipe" name="tipe" required value="<?= htmlspecialchars($_POST['tipe'] ?? $asset['tipe']); ?>">
+                                    </div>
+
+                                    <!-- Foto Lama & Input Foto Baru -->
+                                    <div class="mb-4">
+                                        <label class="form-label fw-semibold d-block">Foto Asset Saat Ini</label>
+                                        <div class="mb-2">
+                                            <?php if (!empty($asset['foto']) && file_exists(__DIR__ . '/uploads/' . $asset['foto'])): ?>
+                                                <img src="uploads/<?= htmlspecialchars($asset['foto']); ?>" alt="Foto Asset" class="preview-img border shadow-sm">
+                                                <div class="small text-muted mt-1"><?= htmlspecialchars($asset['foto']); ?></div>
+                                            <?php else: ?>
+                                                <span class="badge bg-secondary p-2">Belum ada foto</span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <label for="foto" class="form-label fw-semibold mt-2">Ganti Foto (Opsional)</label>
+                                        <input class="form-control" type="file" id="foto" name="foto" accept="image/*">
+                                        <div class="form-text">Biarkan kosong jika tidak ingin mengubah foto asset.</div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between pt-3 border-top">
+                                        <a href="index.php" class="btn btn-outline-secondary">
+                                            <i class="bi bi-x-circle me-1"></i> Batal
+                                        </a>
+                                        <button type="submit" class="btn btn-warning px-4 text-dark fw-semibold shadow-sm">
+                                            <i class="bi bi-check-lg me-1"></i> Simpan Perubahan
+                                        </button>
+                                    </div>
+
+                                </form>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle Sidebar untuk Layar Mobile
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebarMenu   = document.getElementById('sidebarMenu');
+        const backdrop      = document.getElementById('sidebarBackdrop');
+
+        if (sidebarToggle && sidebarMenu && backdrop) {
+            sidebarToggle.addEventListener('click', () => {
+                sidebarMenu.classList.toggle('show');
+                backdrop.classList.toggle('show');
+            });
+
+            backdrop.addEventListener('click', () => {
+                sidebarMenu.classList.remove('show');
+                backdrop.classList.remove('show');
+            });
+        }
+    </script>
 </body>
 </html>
