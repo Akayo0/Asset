@@ -207,16 +207,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <input type="text" class="form-control" id="sdt" name="sdt" placeholder="Contoh: SDT-01-JKT" required value="<?= htmlspecialchars($_POST['sdt'] ?? ''); ?>">
                                     </div>
 
-                                    <!-- Input No Lambung dengan Datalist (843 s/d 8164) -->
+                                    <!-- Input No Lambung Dropdown (8143 s/d 8164) -->
                                     <div class="mb-3">
                                         <label for="no_lambung" class="form-label fw-semibold">No Lambung <span class="text-danger">*</span></label>
-                                        <input list="listLambung" type="number" class="form-control" id="no_lambung" name="no_lambung" placeholder="Pilih opsi (843 - 8164) atau ketik manual..." required value="<?= htmlspecialchars($_POST['no_lambung'] ?? ''); ?>">
-                                        <datalist id="listLambung">
-                                            <?php for ($i = 843; $i <= 8164; $i++): ?>
-                                                <option value="<?= $i; ?>">
+                                        <select class="form-select" id="no_lambung" name="no_lambung" required>
+                                            <option value="">-- Pilih No Lambung (8143 - 8164) --</option>
+                                            <?php for ($i = 8143; $i <= 8164; $i++): ?>
+                                                <option value="<?= $i; ?>" <?= (isset($_POST['no_lambung']) && $_POST['no_lambung'] == $i) ? 'selected' : ''; ?>>
+                                                    <?= $i; ?>
+                                                </option>
                                             <?php endfor; ?>
-                                        </datalist>
-                                        <div class="form-text">Mendukung input manual atau pemilihan cepat dari angka 843 sampai 8164.</div>
+                                        </select>
+                                        <div class="form-text">Pilih nomor lambung dari 8143 sampai 8164.</div>
                                     </div>
 
                                     <!-- Input Merk (Pre-filled dengan Mercedez Benz) -->
